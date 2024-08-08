@@ -7,7 +7,9 @@ import re
 import requests
 from bs4 import BeautifulSoup
 from dms2dec.dms_convert import dms2dec
-
+import sqlite3
+import requests
+from datetime import datetime
 
 app = Flask(__name__)
 
@@ -61,6 +63,77 @@ def get_file_age(filename):
     except FileNotFoundError:
         # Handle the case when the file doesn't exist
         return 99 * 60 #Gives the illusion of a file that is 99 minutes old.
+
+
+def fetch_dataDB():
+    historyFileMessage = ""
+    url = 'https://www.yaesu.com/jp/en/wires-x/id/active_node.php'
+    
+    # Connect to SQLite database
+    conn = sqlite3.connect('history.db')
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS history
+                      (id INTEGER PRIMARY KEY, content TEXT, creation_time TIMESTAMP)''')
+    
+    # Retrieve the last inserted row
+    cursor.execute('SELECT content, creation_time FROM history ORDER BY id DESC LIMIT 1')
+    row = cursor.fetchone()
+    
+    if row:
+        html_content, creation_time = row
+        age_in_minutes = (datetime.now() - datetime.fromisoformat(creation_time)).total_seconds() // 60
+    else:
+        html_content = ""
+        age_in_minutes = None
+
+    if age_in_minutes is None or age_in_minutes > 19:  # WiresX refresh the page every 20 minutes
+        response = requests.get(url)
+        if response.status_code == 200:
+            html_content = response.text
+            historyFileMessage = "This is the latest data from yaesu.com"
+            cursor.execute('INSERT INTO history (content, creation_time) VALUES (?, ?)',
+                           (html_content, datetime.now()))
+            conn.commit()
+        else:
+            historyFileMessage = f"Failed to retrieve content from {url}"
+    else:
+        remaining_seconds = (datetime.now() - datetime.fromisoformat(creation_time)).total_seconds() % 60
+        historyFileMessage = f"This data is: {age_in_minutes:.0f} minutes and {remaining_seconds:.0f} seconds old."
+
+    conn.close()
+    
+    pattern = r"dataList\[\d+\] ="
+    matching_lines = [line.strip() for line in html_content.splitlines() if re.match(pattern, line)]
+    
+    data_list = []
+    for line in matching_lines:
+        matches = re.findall(r'(\w+):\"([^\"]+)\"', line)
+        data_dict = dict(matches)
+        data_list.append(data_dict)
+
+    data_array = [
+        {
+            'dtmf_id': item.get('dtmf_id', ''),
+            'call_sign': item.get('call_sign', ''),
+            'ana_dig': item.get('ana_dig', ''),
+            'city': item.get('city', ''),
+            'state': item.get('state', ''),
+            'country': item.get('country', ''),
+            'freq': item.get('freq', ''),
+            'sql': item.get('sql', ''),
+            'lat': item.get('lat', '').replace('&quot;', '"'),
+            'lon': item.get('lon', '').replace('&quot;', '"'),
+            'latConverted': dms2decConversion(item.get('lat', '').replace('&quot;', '"')),
+            'lonConverted': dms2decConversion(item.get('lon', '').replace('&quot;', '"')),
+            'geotag': dms_to_geo_tag(item.get('lat', '').replace('&quot;', '"'), item.get('lon', '').replace('&quot;', '"')),
+            'comment': item.get('comment', '')
+        }
+        for item in data_list
+    ]
+    
+    return data_array, historyFileMessage     
+
+
 
 def fetch_data():
     historyFileMessage = ""
@@ -120,22 +193,22 @@ def fetch_data():
 
 @app.route('/')
 def homePage():
-    data_array, historyFileMessage = fetch_data()
+    data_array, historyFileMessage = fetch_dataDB()
     return render_template('index.html', data_array=data_array, historyFileMessage=historyFileMessage)
 
 @app.route('/data')
 def dataPage():
-    data_array, historyFileMessage = fetch_data()
+    data_array, historyFileMessage = fetch_dataDB()
     return render_template('data.html', data_array=data_array, historyFileMessage=historyFileMessage)
 
 @app.route('/map')
 def mapPage():
-    data_array, historyFileMessage = fetch_data()
+    data_array, historyFileMessage = fetch_dataDB()
     return render_template('map.html', data_array=data_array, historyFileMessage=historyFileMessage)
 
 @app.route('/jsonView')
 def jsonView():
-    data_array, historyFileMessage = fetch_data()
+    data_array, historyFileMessage = fetch_dataDB()
     json_string = json.dumps(data_array)
     return json_string
 
