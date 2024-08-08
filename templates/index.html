@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Wires-X - Home</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <!-- Font Awesome CSS for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">    
+    <style>
+        #map { height: 600px; }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Live WiresX Nodes</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('homePage') }}">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('mapPage') }}">
+                        <i class="fas fa-map"></i> Maps
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('dataPage') }}">
+                        <i class="fas fa-table"></i> Nodes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" target="_new" href="{{ url_for('jsonView') }}">
+                        <i class="fas fa-file-alt"></i> JSON
+                    </a>
+                </li>
+            </ul>
+            <span class="navbar-text ml-auto">
+                {{ historyFileMessage }}
+            </span>
+        </div>
+    </nav>
+
+    <section class="container mt-5">
+        <h2>About Yaesu Wires-X</h2>
+        <p>WIRES-X (Wide-coverage Internet Repeater Enhancement System) is an Internet communication system that expands the range of amateur radio communication. It uses an amateur node station connected to the Internet as an access point, allowing users to communicate with other amateur stations worldwide. WIRES-X supports C4FM digital technology, providing high sound quality and clear voice communications even over long distances[^1^][3].</p>
+    </section>
+
+    <section class="container mt-5">
+        <h2>Why This Site?</h2>
+        <p>I have used the <a href="https://www.yaesu.com/jp/en/wires-x/id/active_node.php" target="_new">WIRES-X ACTIVE NODE ID list</a> in the yaesu.com website and while it is a good list that is up to date, the user experience is a little lacking, so this site has been put together.</p>
+    </section>
+
+    <section class="container mt-5">
+        <h2>Age of the data?</h2>
+        <p>Yaasu publishes a list of Wires-X nodes every 20 minutes on their site, in an attempt to keep traffic to the Yaasu site to a minimum we will cache the data will be refreshed in line with the Yaasu approach.</p>
+        <p>This will mean that we will only be pulling the data 72 times a day, you will be able to see the age of the data in the navigation bar on the right-hand side.</p>
+    </section>
+
+    <section class="container mt-5">
+        <h2>About This Site</h2>
+        <p>This site provides live data on active WiresX nodes, including maps and data tables. Below is a description of each link in the navigation bar:</p>
+        <ul>
+            <li><strong>Home</strong> The main page of the site, providing an overview and introduction.</li>
+            <li><strong>Maps</strong> A page displaying a map with pins representing active WiresX nodes.</li>
+            <li><strong>Nodes</strong> A data table listing all active WiresX nodes with relevant details.</li>
+            <li><strong>JSON</strong> A link to view the data in JSON format, you could build a solution using this data.</li>
+        </ul>
+        <p>This project used the following components.</p>
+
+        <div class="container">
+            <div class="row">
+                <div class="col-6 col-md-3 text-center">
+                    <a href="https://flask.palletsprojects.com/" target="_blank">
+                        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/3/3c/Flask_logo.svg/1200px-Flask_logo.svg.png" alt="Flask" width="100">
+                    </a>
+                </div>
+                <div class="col-6 col-md-3 text-center">
+                    <a href="https://leafletjs.com/" target="_blank">
+                        <img src="https://leafletjs.com/docs/images/logo.png" alt="Leaflet.js" width="100">
+                    </a>
+                </div>
+                <div class="col-6 col-md-3 text-center">
+                    <a href="https://www.openstreetmap.org/" target="_blank">
+                        <img src="https://www.openstreetmap.org/assets/osm_logo-4b074077c29e100f40ee64f5177886e36b570d4cc3ab10c7b263003d09642e3f.svg" alt="OpenStreetMap" width="100">
+                    </a>
+                </div>
+                <div class="col-6 col-md-3 text-center">
+                    <a href="https://getbootstrap.com/" target="_blank">
+                        <img src="https://getbootstrap.com/docs/5.3/assets/brand/bootstrap-logo-shadow.png" alt="Bootstrap" width="100">
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        
+    <!-- Footer -->
+    <footer class="bg-light text-center py-3">
+        © 2024 Live WiresX Nodes, data from <a href="https://www.yaesu.com/jp/en/wires-x/id/active_node.php" target="_new">yaesu.com</a>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+</body>
+</html>

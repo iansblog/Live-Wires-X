@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Wires-X - Node Map</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.5/css/dataTables.bootstrap4.min.css">
+    <!-- Font Awesome CSS for icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">    
+    <style>
+        #map { height: 600px; }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Live WiresX Nodes</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('homePage') }}">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('mapPage') }}">
+                        <i class="fas fa-map"></i> Maps
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('dataPage') }}">
+                        <i class="fas fa-table"></i> Nodes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" target="_new" href="{{ url_for('jsonView') }}">
+                        <i class="fas fa-file-alt"></i> JSON
+                    </a>
+                </li>
+            </ul>
+            <span class="navbar-text ml-auto">
+                {{ historyFileMessage }}
+            </span>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <h1>Wires-X Nodes (with geolocation information)</h1>
+        <div id="map" class="mb-4"></div>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-light text-center py-3">
+        © 2024 Live WiresX Nodes, data from <a href="https://www.yaesu.com/jp/en/wires-x/id/active_node.php" target="_new">yaesu.com</a>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+    <script src="https://cdn.datatables.net/1.13.5/js/jquery.dataTables.min.js"></script>
+    <script src="https://cdn.datatables.net/1.13.5/js/dataTables.bootstrap4.min.js"></script>
+    <script src="https://cdn.datatables.net/plug-ins/1.13.5/api/fnFilterOnReturn.js"></script>
+    <script src="https://cdn.datatables.net/plug-ins/1.13.5/api/fnFilterClear.js"></script>
+    <script>
+        var map = L.map('map').setView([33.3325, -112.06416666666667], 10);
+
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+        }).addTo(map);
+
+        var markers = L.markerClusterGroup();
+        var bounds = L.latLngBounds();
+        var data_array = {{ data_array|tojson }};
+        data_array.forEach(function(row) {
+            if (row.geotag) {
+                var geotag = row.geotag.split(',').map(Number);
+                var popupContent = `
+                <b>Call Sign:</b> ${row.call_sign}<br>
+                <b>DTMF ID:</b> ${row.dtmf_id}<br>
+                <b>Analog/Digital:</b> ${row.ana_dig}<br>
+                <b>City:</b> ${row.city}<br>
+                <b>State:</b> ${row.state}<br>
+                <b>Country:</b> ${row.country}<br>
+                <b>Frequency:</b> ${row.freq}<br>
+                <b>SQL:</b> ${row.sql}<br>
+                <b>Latitude:</b> ${row.lat}<br>
+                <b>Longitude:</b> ${row.lon}<br>
+                <b>Comment:</b> ${row.comment}
+                `;
+            
+                    var marker = L.marker(geotag).bindPopup(popupContent);
+                    markers.addLayer(marker);
+                    bounds.extend(geotag);
+                }
+            });
+
+        map.addLayer(markers);
+        if (bounds.isValid()) {
+            map.fitBounds(bounds);
+        }
+
+        $(document).ready(function() {
+            var table = $('.table').DataTable();
+
+            // Add a select dropdown to the Country column
+            table.columns(2).every(function() {
+                var column = this;
+                var select = $('<select><option value=""></option></select>')
+                    .appendTo($(column.header()).empty())
+                    .on('change', function() {
+                        var val = $.fn.dataTable.util.escapeRegex($(this).val());
+                        column.search(val ? '^' + val + '$' : '', true, false).draw();
+                    });
+
+                column.data().unique().sort().each(function(d, j) {
+                    select.append('<option value="' + d + '">' + d + '</option>');
+                });
+            });
+        });
+    </script>
+</body>
+</html>

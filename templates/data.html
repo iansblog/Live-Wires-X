@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Active Wires-X - Node Data</title>
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet"> 
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.10.21/css/jquery.dataTables.min.css">
+    <style>
+        .nowrap-header th {
+            white-space: nowrap;
+        }
+
+        .top-align-header th {
+            vertical-align: top;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation Bar -->
+    <nav class="navbar navbar-expand-lg navbar-light bg-light">
+        <a class="navbar-brand" href="#">Live WiresX Nodes</a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav mr-auto">
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('homePage') }}">
+                        <i class="fas fa-home"></i> Home
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('mapPage') }}">
+                        <i class="fas fa-map"></i> Maps
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" href="{{ url_for('dataPage') }}">
+                        <i class="fas fa-table"></i> Nodes
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link" target="_new" href="{{ url_for('jsonView') }}">
+                        <i class="fas fa-file-alt"></i> JSON
+                    </a>
+                </li>
+            </ul>
+            <span class="navbar-text ml-auto">
+                {{ historyFileMessage }}
+            </span>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <h1>Wires-X Nodes</h1>
+
+        <div class="form-group">
+            <label for="countryFilter">Filter by Country:</label>
+            <select id="countryFilter" class="form-control">
+                <option value="">All</option>
+            </select>
+        </div>
+
+        <table class="table table-striped">
+            <thead class="thead-dark nowrap-header">
+                <tr>
+                    <th>On the map</th>
+                    <th>DTMF/Room ID</th>
+                    <th>Call Sign</th>
+                    <th>Country</th>
+                    <th>Comment</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in data_array %}
+                    <tr>
+                        <td>
+                            {% if row['geotag'] %}
+                                <i class="fas fa-check"></i> <!-- Font Awesome tick icon -->
+                            {% else %}
+                                <i class="fas fa-times"></i> <!-- Font Awesome cross icon -->
+                            {% endif %}
+                        </td>
+                        <td>{{ row['dtmf_id'] }}</td>
+                        <td>{{ row['call_sign'] }}</td>
+                        <td>{{ row['country'] }}</td>
+                        <td>{{ row['comment'] }}</td>
+                    </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <hr/>
+    </div>
+
+    <!-- Footer -->
+    <footer class="bg-light text-center py-3">
+        © 2024 Live WiresX Nodes, data from <a href="https://www.yaesu.com/jp/en/wires-x/id/active_node.php" target="_new">yaesu.com</a>
+    </footer>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    <script src="https://cdn.datatables.net/1.10.21/js/jquery.dataTables.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            var table = $('.table').DataTable({
+                "ordering": false
+            });
+
+            // Populate the country dropdown with unique values
+            var uniqueCountries = [];
+            table.column(3).data().each(function(value, index) {
+                if (uniqueCountries.indexOf(value) === -1) {
+                    uniqueCountries.push(value);
+                }
+            });
+
+            uniqueCountries.sort().forEach(function(country) {
+                $('#countryFilter').append('<option value="' + country + '">' + country + '</option>');
+            });
+
+            // Event listener for "Country" dropdown
+            $('#countryFilter').on('change', function() {
+                table.column(3).search(this.value).draw();
+            });
+        });
+    </script>
+</body>
+</html>
