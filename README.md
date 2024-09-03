@@ -30,6 +30,9 @@ Yaasu publishes a list of Wires-X nodes every 20 minutes on their site, in an at
 
 This will mean that we will only be pulling the data 72 times a day, you will be able to see the age of the data in the navigation bar on the right-hand side.
 
+## Validity of the geolocation pins
+The geolocation pins are placed on the map as the owner of the room has specfied and may not be accurate, not all owners of the rooms have provided geolocations, the map only containes entries with geolocation while the table contains all rooms that are online, in the table you can search on any fields in the data set e.g. room id or call sign. 
+
 ## About This Site
 This site provides live data on active WiresX nodes, including maps and data tables. Below is a description of each link in the navigation bar:
 
