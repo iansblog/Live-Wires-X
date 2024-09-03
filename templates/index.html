@@ -74,7 +74,10 @@
         <h2 id="age-of-the-data" class="mt-4">Age of the data?</h2>
         <p>Yaesu publishes a list of Wires-X nodes every 20 minutes on their site. In an attempt to keep traffic to the Yaesu site to a minimum, we will cache the data and refresh it in line with the Yaesu approach.</p>
         <p>This means that we will only be pulling the data 72 times a day. You will be able to see the age of the data in the navigation bar on the right-hand side.</p>
-        
+
+        <h2 id="age-of-the-data" class="mt-4">Validity of the geolocation pins</h2> 
+        <p>The geolocation pins are placed on the map as the owner of the room has specfied and may not be accurate, not all owners of the rooms have provided geolocations, the map only containes entries with geolocation while the table contains all rooms that are online, in the table you can search on any fields in the data set e.g. room id or call sign.</p>
+
         <h2 id="to-run-this-in-a-production-environment" class="mt-4">To run this in a production environment please use the following command:</h2>
         <ul>
             <li><code>gunicorn -w 4 -b 0.0.0.0:80 app:app</code></li>
