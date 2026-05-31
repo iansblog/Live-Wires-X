@@ -1,14 +1,10 @@
 # app.py
-from flask import Flask, render_template, jsonify
-import os
-import json 
-import time 
+from flask import Flask, render_template, jsonify, Response
+import json
 import re
 import requests
-from bs4 import BeautifulSoup
 from dms2dec.dms_convert import dms2dec
 import sqlite3
-import requests
 from datetime import datetime
 
 app = Flask(__name__)
@@ -56,62 +52,49 @@ def dms2decConversion(myValue):
     #decimal_degrees = dms2dec(dms_tuple)  # Pass the tuple as a single argument
     return dms2dec(f"{deg} {min_val}' {sec_val}\"")  # Create a formatted string 
 
-def get_file_age(filename):
+def fetch_remote_html(url, timeout=10):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 '
+                      '(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.5',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Connection': 'close'
+    }
     try:
-        # Get the last modified timestamp of the file
-        return time.time() - os.path.getmtime(filename)
-    except FileNotFoundError:
-        # Handle the case when the file doesn't exist
-        return 99 * 60 #Gives the illusion of a file that is 99 minutes old.
+        response = requests.get(url, headers=headers, timeout=timeout)
+        response.raise_for_status()
+        return response.text, None
+    except requests.exceptions.RequestException as exc:
+        return None, str(exc)
+    except Exception as exc:
+        return None, str(exc)
 
 
-def fetch_dataDB():
-    historyFileMessage = ""
-    url = 'https://www.yaesu.com/jp/en/wires-x/id/active_node.php'
-    
-    # Connect to SQLite database
-    conn = sqlite3.connect('history.db')
-    cursor = conn.cursor()
-    cursor.execute('''CREATE TABLE IF NOT EXISTS history
-                      (id INTEGER PRIMARY KEY, content TEXT, creation_time TIMESTAMP)''')
-    
-    # Retrieve the last inserted row
+def load_db_cache(cursor):
     cursor.execute('SELECT content, creation_time FROM history ORDER BY id DESC LIMIT 1')
     row = cursor.fetchone()
-    
-    if row:
-        html_content, creation_time = row
-        age_in_minutes = (datetime.now() - datetime.fromisoformat(creation_time)).total_seconds() // 60
-    else:
-        html_content = ""
-        age_in_minutes = None
+    if not row:
+        return "", None
+    return row[0], row[1]
 
-    if age_in_minutes is None or age_in_minutes > 19:  # WiresX refresh the page every 20 minutes
-        response = requests.get(url)
-        if response.status_code == 200:
-            html_content = response.text
-            historyFileMessage = "This is the latest data from yaesu.com"
-            cursor.execute('INSERT INTO history (content, creation_time) VALUES (?, ?)',
-                           (html_content, datetime.now()))
-            conn.commit()
-        else:
-            historyFileMessage = f"Failed to retrieve content from {url}"
-    else:
-        remaining_seconds = (datetime.now() - datetime.fromisoformat(creation_time)).total_seconds() % 60
-        historyFileMessage = f"This data is: {age_in_minutes:.0f} minutes and {remaining_seconds:.0f} seconds old."
 
-    conn.close()
-    
+def save_db_cache(cursor, html_content):
+    cursor.execute('INSERT INTO history (content, creation_time) VALUES (?, ?)',
+                   (html_content, datetime.now()))
+
+
+def parse_history_html(html_content):
     pattern = r"dataList\[\d+\] ="
     matching_lines = [line.strip() for line in html_content.splitlines() if re.match(pattern, line)]
-    
+
     data_list = []
     for line in matching_lines:
         matches = re.findall(r'(\w+):\"([^\"]+)\"', line)
         data_dict = dict(matches)
         data_list.append(data_dict)
 
-    data_array = [
+    return [
         {
             'dtmf_id': item.get('dtmf_id', ''),
             'call_sign': item.get('call_sign', ''),
@@ -130,66 +113,47 @@ def fetch_dataDB():
         }
         for item in data_list
     ]
-    
-    return data_array, historyFileMessage     
 
 
-
-def fetch_data():
+def fetch_dataDB():
     historyFileMessage = ""
     url = 'https://www.yaesu.com/jp/en/wires-x/id/active_node.php'
-    history_file = 'history.html'
-    age_in_minutes = get_file_age(history_file) / 60
-    age_in_seconds = get_file_age(history_file)
-    
-    if age_in_seconds is not None:
-        age_in_minutes = age_in_seconds // 60
-        remaining_seconds = age_in_seconds % 60
+    conn = sqlite3.connect('history.db')
+    cursor = conn.cursor()
+    cursor.execute('''CREATE TABLE IF NOT EXISTS history
+                      (id INTEGER PRIMARY KEY, content TEXT, creation_time TIMESTAMP)''')
 
-    if age_in_minutes > 19:  # WiresX refresh the page every 20 minutes
-        response = requests.get(url)
-        if response.status_code == 200:
-            with open(history_file, "w") as file:
-                file.write(response.text)
-                historyFileMessage = "This is the latest data from yaesu.com"
+    html_content, creation_time = load_db_cache(cursor)
+    age_in_minutes = None
+    if creation_time:
+        age_in_minutes = (datetime.now() - datetime.fromisoformat(creation_time)).total_seconds() // 60
+
+    if age_in_minutes is None or age_in_minutes > 19:
+        remote_html, error = fetch_remote_html(url)
+        if remote_html is not None:
+            html_content = remote_html
+            historyFileMessage = "This is the latest data from yaesu.com"
+            save_db_cache(cursor, html_content)
+            conn.commit()
         else:
-            historyFileMessage = f"Failed to retrieve content from {url}"
+            app.logger.warning("Remote data refresh failed: %s", error)
+            if html_content:
+                if age_in_minutes is not None:
+                    historyFileMessage = f"Could not refresh data; showing cached content ({age_in_minutes:.0f} minutes old)."
+                else:
+                    historyFileMessage = "Could not refresh data; showing cached content."
+            else:
+                historyFileMessage = "Could not retrieve data from the remote service. Please try again later."
     else:
+        remaining_seconds = (datetime.now() - datetime.fromisoformat(creation_time)).total_seconds() % 60
         historyFileMessage = f"This data is: {age_in_minutes:.0f} minutes and {remaining_seconds:.0f} seconds old."
 
-    with open(history_file, 'r') as file:
-        html_content = file.read()
-        
-        pattern = r"dataList\[\d+\] ="
-        matching_lines = [line.strip() for line in html_content.splitlines() if re.match(pattern, line)]
+    conn.close()
 
-        data_list = []
-        for line in matching_lines:
-            matches = re.findall(r'(\w+):\"([^\"]+)\"', line)
-            data_dict = dict(matches)
-            data_list.append(data_dict)
+    if not html_content:
+        return [], historyFileMessage
 
-        data_array = [
-            {
-                'dtmf_id': item.get('dtmf_id', ''),
-                'call_sign': item.get('call_sign', ''),
-                'ana_dig': item.get('ana_dig', ''),
-                'city': item.get('city', ''),
-                'state': item.get('state', ''),
-                'country': item.get('country', ''),
-                'freq': item.get('freq', ''),
-                'sql': item.get('sql', ''),
-                'lat': item.get('lat', '').replace('&quot;', '"'),
-                'lon': item.get('lon', '').replace('&quot;', '"'),
-                'latConverted': dms2decConversion(item.get('lat', '').replace('&quot;', '"')),
-                'lonConverted': dms2decConversion(item.get('lon', '').replace('&quot;', '"')),
-                'geotag': dms_to_geo_tag(item.get('lat', '').replace('&quot;', '"'), item.get('lon', '').replace('&quot;', '"')),
-                'comment': item.get('comment', '')
-            }
-            for item in data_list
-        ]
-    
-    return data_array, historyFileMessage    
+    return parse_history_html(html_content), historyFileMessage    
 
 @app.route('/')
 def homePage():
@@ -209,8 +173,9 @@ def mapPage():
 @app.route('/jsonView')
 def jsonView():
     data_array, historyFileMessage = fetch_dataDB()
-    json_string = json.dumps(data_array)
-    return json_string
+    payload = json.dumps(data_array, ensure_ascii=False)
+    content_length = len(payload.encode('utf-8'))
+    return Response(payload, mimetype='application/json', headers={'Content-Length': str(content_length)})
 
 if __name__ == '__main__':
     app.run()
