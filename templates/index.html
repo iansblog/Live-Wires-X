@@ -1,113 +1,77 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Active Wires-X - Home</title>
-    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
-    <!-- Font Awesome CSS for icons -->
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">    
-    <style>
-        #map { height: 600px; }
-    </style>
-</head>
-<body>
-    <!-- Navigation Bar -->
-    <nav class="navbar navbar-expand-lg navbar-light bg-light">
-        <a class="navbar-brand" href="#">Live WiresX Nodes</a>
-        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
-            <span class="navbar-toggler-icon"></span>
-        </button>
-        <div class="collapse navbar-collapse" id="navbarNav">
-            <ul class="navbar-nav mr-auto">
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('homePage') }}">
-                        <i class="fas fa-home"></i> Home
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('mapPage') }}">
-                        <i class="fas fa-map"></i> Maps
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" href="{{ url_for('dataPage') }}">
-                        <i class="fas fa-table"></i> Nodes
-                    </a>
-                </li>
-                <li class="nav-item">
-                    <a class="nav-link" target="_new" href="{{ url_for('jsonView') }}">
-                        <i class="fas fa-file-alt"></i> JSON
-                    </a>
-                </li>
-            </ul>
-            <span class="navbar-text ml-auto">
-                {{ historyFileMessage }}
-            </span>
-        </div>
-    </nav>
+{% extends "base.html" %}
 
-    <div class="container">
-        <h1 id="live-wires-x" class="mt-5">Live Wires-X</h1>
-        <h2 id="about-yaesu-wires-x" class="mt-4">About Yaesu Wires-X</h2>
-        <p>WIRES-X (Wide-coverage Internet Repeater Enhancement System) is an Internet communication system that expands the range of amateur radio communication. It uses an amateur node station connected to the Internet as an access point, allowing users to communicate with other amateur stations worldwide. WIRES-X supports C4FM digital technology, providing high sound quality and clear voice communications even over long distances.</p>
-        
-        <h2 id="docker-container" class="mt-4">Docker container</h2>
-        <p>This project is available as a Docker container for you to run in your shack. It will run on a Raspberry Pi (3b, 4 &amp; 5) quite nicely:</p>
-        <pre><code>docker run -d -p 80:80 --name live_wires_x --restart=always neonsunset/live_wires_x</code></pre>
-        <p>You can run this on any port you would like just change the <code>&lt;port&gt;</code>:</p>
-        <pre><code>docker run -d -p &lt;port&gt;:80 --name live_wires_x --restart=always neonsunset/live_wires_x</code></pre>
-        <p><a target="_new" href="https://hub.docker.com/r/neonsunset/live_wires_x">https://hub.docker.com/r/neonsunset/live_wires_x</a></p>
+{% block title %}Live Wires-X - Home{% endblock %}
+{% block header_prefix %}Wires-X Nodes - Home Dashboard{% endblock %}
+{% block page_heading %}Live Wires-X Overview{% endblock %}
 
-        <h2 id="GitHub-SourceCode" class="mt-4">GitHub - Source Code</h2>
-        <p>
-        The code for this project is available on: 
-        <a target="_new" href="https://github.com/iansblog/Live-Wires-X">
-            <img target="_blank" src="https://github.githubassets.com/images/modules/logos_page/GitHub-Mark.png" alt="GitHub" width="20" height="20">
-            Live-Wires-X
-        </a>
-        </p>
-        
-        <h2 id="why-this-site" class="mt-4">Why This Site?</h2>
-        <p>I have used the WIRES-X ACTIVE NODE ID list on the yaesu.com website and while it is a good list that is up to date, the user experience is a little lacking, so this site has been put together.</p>
-        
-        <h2 id="age-of-the-data" class="mt-4">Age of the data?</h2>
-        <p>Yaesu publishes a list of Wires-X nodes every 20 minutes on their site. In an attempt to keep traffic to the Yaesu site to a minimum, we will cache the data and refresh it in line with the Yaesu approach.</p>
-        <p>This means that we will only be pulling the data 72 times a day. You will be able to see the age of the data in the navigation bar on the right-hand side.</p>
-
-        <h2 id="age-of-the-data" class="mt-4">Validity of the geolocation pins</h2> 
-        <p>The geolocation pins are placed on the map as the owner of the room has specfied and may not be accurate, not all owners of the rooms have provided geolocations, the map only containes entries with geolocation while the table contains all rooms that are online, in the table you can search on any fields in the data set e.g. room id or call sign.</p>
-
-        <h2 id="to-run-this-in-a-production-environment" class="mt-4">To run this in a production environment please use the following command:</h2>
-        <ul>
-            <li><code>gunicorn -w 4 -b 0.0.0.0:80 app:app</code></li>
-        </ul>
-        
-        <h2 id="about-this-site" class="mt-4">About This Site</h2>
-        <p>This site provides live data on active WiresX nodes, including maps and data tables. Below is a description of each link in the navigation bar:</p>
-        <ul>
-            <li><strong>Home:</strong> The main page of the site, providing an overview and introduction.</li>
-            <li><strong>Maps:</strong> A page displaying a map with pins representing active WiresX nodes.</li>
-            <li><strong>Nodes:</strong> A data table listing all active WiresX nodes with relevant details.</li>
-            <li><strong>JSON:</strong> A link to view the data in JSON format, you could build a solution using this data.</li>
-        </ul>
-        
-        <h3 id="this-project-used-the-following-components" class="mt-4">This project used the following components:</h3>
-        <ul>
-            <li>Flask</li>
-            <li>Leaflet.js</li>
-            <li>OpenStreetMap</li>
-            <li>Bootstrap</li>
-        </ul>
+{% block content %}
+<div class="hero-grid">
+    <div class="metric-card">
+        <p class="metric-label">Total Active Nodes</p>
+        <p class="metric-value">{{ data_array|length }}</p>
     </div>
-        
-    <!-- Footer -->
-    <footer class="bg-light text-center py-3">
-        © 2024 Live WiresX Nodes, data from <a href="https://www.yaesu.com/jp/en/wires-x/id/active_node.php" target="_new">yaesu.com</a>
-    </footer>
+    <div class="metric-card">
+        <p class="metric-label">Geolocated Nodes</p>
+        <p class="metric-value">{{ (data_array|selectattr('geotag')|list)|length }}</p>
+    </div>
+    <div class="metric-card">
+        <p class="metric-label">Reporting Countries</p>
+        <p class="metric-value">{{ (data_array|map(attribute='country')|unique|list)|length }}</p>
+    </div>
+</div>
 
-    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
-    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
-</body>
-</html>
+<section class="card-panel">
+    <h2>Why this dashboard?</h2>
+    <div class="card-row">
+        <div>
+            <p>Data from the official WIRES-X active node list is now surfaced in a modern, responsive dashboard for quick insights.</p>
+            <ul class="bullet-list">
+                <li>Compact summary cards</li>
+                <li>Fast navigation between map and table views</li>
+                <li>Dark/light mode for all screens</li>
+            </ul>
+        </div>
+        <div>
+            <p>Use this home page to understand node coverage, geolocation availability, and how fresh the data is without scrolling through raw tables.</p>
+        </div>
+    </div>
+</section>
+
+<section class="card-panel">
+    <h2>About this project</h2>
+    <div class="card-row">
+        <div>
+            <p>This dashboard is built on the Yaesu WIRES-X active node list to improve usability and make the data easier to explore.</p>
+            <ul class="bullet-list">
+                <li>Aggregates active Wires-X nodes from the official Yaesu source.</li>
+                <li>Offers map and searchable table views for quick inspection.</li>
+                <li>Includes a JSON endpoint for integration with other tools.</li>
+            </ul>
+        </div>
+        <div>
+            <p>Data is refreshed approximately every 20 minutes, matching Yaesu's update cadence, and is cached to reduce repeated load on the source.</p>
+            <p>Geolocation pins reflect the coordinates provided by room owners and may not always be exact.</p>
+        </div>
+    </div>
+    <div class="card-row">
+        <div>
+            <h3>Navigation</h3>
+            <ul class="bullet-list">
+                <li><strong>Home</strong> — overview and project context.</li>
+                <li><strong>Maps</strong> — interactive node map with location pins.</li>
+                <li><strong>Nodes</strong> — searchable table of all active rooms.</li>
+                <li><strong>JSON</strong> — raw data feed for developers.</li>
+            </ul>
+        </div>
+        <div>
+            <h3>Built with</h3>
+            <ul class="bullet-list">
+                <li>Flask</li>
+                <li>Bootstrap</li>
+                <li>Leaflet.js</li>
+                <li>OpenStreetMap</li>
+            </ul>
+        </div>
+    </div>
+</section>
+{% endblock %}

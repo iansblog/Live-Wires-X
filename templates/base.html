@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Live Wires-X Dashboard{% endblock %}</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body data-theme="light">
+    <div class="app-shell">
+        <aside class="app-sidebar">
+            <div class="sidebar-brand">
+                <div class="brand-mark">WX</div>
+                <div>
+                    <p class="eyebrow">Yaesu Wires-X</p>
+                    <h1 class="sidebar-title">Live monitor</h1>
+                </div>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="{{ url_for('homePage') }}" class="sidebar-link"><i class="fas fa-home"></i><span>Home</span></a>
+                <a href="{{ url_for('mapPage') }}" class="sidebar-link"><i class="fas fa-map-marker-alt"></i><span>Maps</span></a>
+                <a href="{{ url_for('dataPage') }}" class="sidebar-link"><i class="fas fa-table"></i><span>Nodes</span></a>
+                <a href="{{ url_for('jsonView') }}" target="_blank" class="sidebar-link"><i class="fas fa-file-code"></i><span>JSON</span></a>
+                <button id="themeToggle" class="sidebar-link theme-toggle-link" type="button">
+                    <i class="fas fa-moon"></i>
+                    <span>Dark Mode</span>
+                </button>
+            </nav>
+            <div class="sidebar-footer">
+                <span>Data from <a href="https://www.yaesu.com/jp/en/wires-x/id/active_node.php" target="_blank" rel="noopener noreferrer">yaesu.com</a></span>
+            </div>
+        </aside>
+
+        <div class="app-main">
+            <header class="app-header shadow-sm">
+                <div class="header-brand">
+                    <div class="header-copy">
+                        <p class="eyebrow">{% block header_prefix %}Overview Dashboard{% endblock %}</p>
+                    </div>
+                    <div class="header-meta">{{ historyFileMessage }}</div>
+                </div>
+            </header>
+
+            <nav class="app-nav d-lg-none">
+                <a href="{{ url_for('homePage') }}" class="sidebar-link"><i class="fas fa-home"></i><span>Home</span></a>
+                <a href="{{ url_for('mapPage') }}" class="sidebar-link"><i class="fas fa-map-marker-alt"></i><span>Maps</span></a>
+                <a href="{{ url_for('dataPage') }}" class="sidebar-link"><i class="fas fa-table"></i><span>Nodes</span></a>
+                <a href="{{ url_for('jsonView') }}" target="_blank" class="sidebar-link"><i class="fas fa-file-code"></i><span>JSON</span></a>
+                <button id="themeToggleMobile" class="sidebar-link theme-toggle-link" type="button">
+                    <i class="fas fa-moon"></i>
+                    <span>Dark Mode</span>
+                </button>
+            </nav>
+
+            <main class="app-content">
+                {% block content %}{% endblock %}
+            </main>
+        </div>
+    </div>
+
+        <footer class="app-footer">
+            <span>© 2026 Live Wires-X Nodes</span>
+            <span>Data from <a href="https://www.yaesu.com/jp/en/wires-x/id/active_node.php" target="_blank">yaesu.com</a></span>
+        </footer>
+    </div>
+
+    <script src="https://code.jquery.com/jquery-3.5.1.slim.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@popperjs/core@2.9.2/dist/umd/popper.min.js"></script>
+    <script src="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/js/bootstrap.min.js"></script>
+    {% block scripts %}
+    <script>
+        const themeToggle = document.getElementById('themeToggle');
+        const themeToggleMobile = document.getElementById('themeToggleMobile');
+        const root = document.documentElement;
+        const storedTheme = localStorage.getItem('theme') || 'light';
+        const applyTheme = (theme) => {
+            root.dataset.theme = theme;
+            const label = theme === 'dark' ? 'Light Mode' : 'Dark Mode';
+            const icon = theme === 'dark' ? 'sun' : 'moon';
+            if (themeToggle) themeToggle.innerHTML = `<i class='fas fa-${icon}'></i> <span>${label}</span>`;
+            if (themeToggleMobile) themeToggleMobile.innerHTML = `<i class='fas fa-${icon}'></i> <span>${label}</span>`;
+            localStorage.setItem('theme', theme);
+        };
+        applyTheme(storedTheme);
+        const toggleTheme = () => applyTheme(root.dataset.theme === 'dark' ? 'light' : 'dark');
+        if (themeToggle) themeToggle.addEventListener('click', toggleTheme);
+        if (themeToggleMobile) themeToggleMobile.addEventListener('click', toggleTheme);
+    </script>
+    {% endblock %}
+</body>
+</html>
